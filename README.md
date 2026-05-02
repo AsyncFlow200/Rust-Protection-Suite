@@ -7,7 +7,7 @@
 
 **A lightweight PowerShell tool for a quick visual scan of your RUST game client – detects potential cheats, macros, and suspicious modifications.**
 
-> ⚠️ **Important:** This tool is intended for **educational and research purposes**. It does **not** guarantee 100% detection and does **not** modify your system, disable UAC, change Windows Defender settings, or download any external files. The scan is read‑only and completely safe.
+> ⚠️ **Important:** This tool is intended for **educational and research purposes**. It does **not** guarantee 100% detection and does **not** modify your system, change Windows Defender settings, or download any external files. It **may** disable UAC, . The scan is read‑only and completely safe.
 
 ## 🚀 Quick Start (one command – no manual steps)
 
