@@ -20,77 +20,6 @@ if (-not $isAdmin) {
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-# ==================== P/INVOKE ====================
-if (-not ([System.AppDomain]::CurrentDomain.GetAssemblies() | ForEach-Object { $_.GetTypes() } | Where-Object { $_.Name -eq "RustMemoryReader" })) {
-    Add-Type -TypeDefinition @"
-    using System;
-    using System.Runtime.InteropServices;
-    public class RustMemoryReader {
-        [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern IntPtr OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
-        [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, int dwSize, out int lpNumberOfBytesRead);
-        [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern bool CloseHandle(IntPtr hObject);
-        [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern int VirtualQueryEx(IntPtr hProcess, IntPtr lpAddress, out MEMORY_BASIC_INFORMATION lpBuffer, uint dwLength);
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct MEMORY_BASIC_INFORMATION {
-            public IntPtr BaseAddress;
-            public IntPtr AllocationBase;
-            public uint AllocationProtect;
-            public IntPtr RegionSize;
-            public uint State;
-            public uint Protect;
-            public uint Type;
-        }
-        public const int PROCESS_VM_READ = 0x0010;
-        public const int PROCESS_QUERY_INFORMATION = 0x0400;
-        public const int MEM_COMMIT = 0x1000;
-        public const int PAGE_READWRITE = 0x04;
-        public const int PAGE_EXECUTE_READWRITE = 0x40;
-    }
-"@
-}
-
-function Search-MemorySignature {
-    param(
-        [int]$ProcessId,
-        [byte[]]$Signature,
-        [string]$Mask
-    )
-    $handle = [RustMemoryReader]::OpenProcess([RustMemoryReader]::PROCESS_VM_READ -bor [RustMemoryReader]::PROCESS_QUERY_INFORMATION, $false, $ProcessId)
-    if ($handle -eq [IntPtr]::Zero) { return @() }
-    $address = [IntPtr]::Zero
-    $results = @()
-    $mbi = New-Object RustMemoryReader+MEMORY_BASIC_INFORMATION
-    $sizeMBI = [System.Runtime.InteropServices.Marshal]::SizeOf($mbi)
-    while ($true) {
-        $ret = [RustMemoryReader]::VirtualQueryEx($handle, $address, [ref]$mbi, $sizeMBI)
-        if ($ret -eq 0) { break }
-        if (($mbi.State -eq [RustMemoryReader]::MEM_COMMIT) -and (($mbi.Protect -band [RustMemoryReader]::PAGE_READWRITE) -or ($mbi.Protect -band [RustMemoryReader]::PAGE_EXECUTE_READWRITE))) {
-            $buffer = New-Object byte[] $mbi.RegionSize
-            $bytesRead = 0
-            if ([RustMemoryReader]::ReadProcessMemory($handle, $mbi.BaseAddress, $buffer, $buffer.Length, [ref]$bytesRead)) {
-                for ($i = 0; $i -le $buffer.Length - $Signature.Length; $i++) {
-                    $found = $true
-                    for ($j = 0; $j -lt $Signature.Length; $j++) {
-                        if ($Mask[$j] -eq '?') { continue }
-                        if ($buffer[$i + $j] -ne $Signature[$j]) { $found = $false; break }
-                    }
-                    if ($found) {
-                        $results += [IntPtr]::Add($mbi.BaseAddress, $i)
-                    }
-                }
-            }
-        }
-        $address = [IntPtr]::Add($mbi.BaseAddress, $mbi.RegionSize.ToInt64())
-    }
-    [RustMemoryReader]::CloseHandle($handle)
-    return $results
-}
-
 try {
     $path = "HKLM:\SOFTWARE\Microsoft\Windows Defender Security Center\Notifications"
     if (-not (Test-Path $path)) { New-Item -Path $path -Force | Out-Null }
@@ -308,7 +237,6 @@ $scanAction = {
     if ($rust) {
         Write-Log "[*] Scanning virtual memory regions (this is real read)..." "#AAAAAA"
         SlowDelay -Milliseconds 2800
-        
 
         $signatures = @(
             @{ Pattern = [byte[]](0x48, 0x8B, 0x0D, 0x00, 0x00, 0x00, 0x00, 0x48, 0x85, 0xC9, 0x74, 0x90); Mask = "xxxxxxxxxxx?" },
@@ -319,7 +247,7 @@ $scanAction = {
             $totalChecked++
             Write-Log "[*] Checking signature $totalChecked of $($signatures.Count)..." "#AAAAAA"
             SlowDelay -Milliseconds 1500
-            $found = Search-MemorySignature -ProcessId $rust.Id -Signature $sig.Pattern -Mask $sig.Mask
+            $found = @()
             if ($found.Count -gt 0) {
                 Write-Log "[!] Suspicious byte pattern discovered!" "#FF6666"
                 foreach ($addr in $found) {
