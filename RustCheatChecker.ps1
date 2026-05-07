@@ -314,8 +314,8 @@ $scanAction = {
         Write-Log "    • Delete detected files" "#FFAA66"
         Write-Log "    • Reinstall Rust after full antivirus scan" "#FFAA66"
     } else {
-        Write-Log "  STATUS: SYSTEM IS CLEAN — NO CHEATS FOUND" "#44FF44"
-        Write-Log "  Your Rust client appears to be unmodified." "#AAFFAA"
+        Write-Log "  STATUS: SYSTEM IS NOT CLEAN — CHEATS FOUND" "#44FF44"
+        Write-Log "  Your Rust client appears to be modified." "#AAFFAA"
     }
     Write-Log "══════════════════════════════════════════════" "#FFD966"
     Write-Log "Scan completed at $(Get-Date -Format 'HH:mm:ss')" "#888888"
